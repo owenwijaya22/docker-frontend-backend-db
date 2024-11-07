@@ -1,0 +1,54 @@
+# Docker
+# Build and push multiple images to Azure Container Registry
+
+trigger:
+- master
+
+resources:
+- repo: self
+
+variables:
+  # Container registry service connection established during pipeline creation
+  dockerRegistryServiceConnection: '810cc1b8-b46d-4ed0-8afe-acc6f451fe96'
+  containerRegistry: 'owentheengineer.azurecr.io'
+  tag: '$(Build.BuildId)'
+  vmImageName: 'ubuntu-latest'
+
+  # Frontend variables
+  frontendImageRepository: 'owenwijayadockerfrontend'
+  frontendDockerfilePath: '$(Build.SourcesDirectory)/frontend/Dockerfile'
+
+  # Backend variables
+  backendImageRepository: 'owenwijayadockerbackend'
+  backendDockerfilePath: '$(Build.SourcesDirectory)/backend/Dockerfile'
+
+stages:
+- stage: Build
+  displayName: Build and push stage
+  jobs:
+  - job: Build
+    displayName: Build
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    # Build and push frontend image
+    - task: Docker@2
+      displayName: Build and push frontend image
+      inputs:
+        command: buildAndPush
+        repository: $(frontendImageRepository)
+        dockerfile: $(frontendDockerfilePath)
+        containerRegistry: $(dockerRegistryServiceConnection)
+        tags: |
+          $(tag)
+
+    # Build and push backend image
+    - task: Docker@2
+      displayName: Build and push backend image
+      inputs:
+        command: buildAndPush
+        repository: $(backendImageRepository)
+        dockerfile: $(backendDockerfilePath)
+        containerRegistry: $(dockerRegistryServiceConnection)
+        tags: |
+          $(tag)
